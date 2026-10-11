@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Islamic History Time Travel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyan: #00e5ff;
+            --turquoise: #1de9b6;
+            --royal-blue: #2962ff;
+            --deep-purple: #12002b;
+            --golden-yellow: #ffb703;
+            --emerald: #00e676;
+            --magenta: #d500f9;
+            --coral: #ff6e40;
+            --white: #ffffff;
+            --bg-glass: rgba(255, 255, 255, 0.1);
+            
+            --bg-lab: radial-gradient(circle at center, #311b92, var(--deep-purple));
+            --bg-history: linear-gradient(to bottom, #4e342e, #3e2723);
+            --bg-space: radial-gradient(circle at top right, #000000, #1a237e, #12002b);
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-user-drag: none; }
+        
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #000; font-family: 'Nunito', sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 100vw; height: 56.25vw; /* 16:9 Aspect Ratio */
+            max-height: 100vh; max-width: 177.78vh;
+            position: relative; overflow: hidden;
+            background: var(--bg-lab);
+            border-radius: 12px;
+            box-shadow: 0 0 40px var(--cyan);
+            color: var(--white);
+        }
+
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: 2%; opacity: 0; transition: opacity 0.5s ease;
+            background-size: cover; background-position: center;
+        }
+        .screen.active { display: flex; opacity: 1; z-index: 10; }
+
+        /* Typography */
+        h1, h2, h3 { font-family: 'Orbitron', sans-serif; margin: 0; text-align: center; }
+        h1 { font-size: 4vw; color: var(--cyan); text-shadow: 0 0 20px var(--cyan); line-height: 1.2; }
+        h2 { font-size: 2.5vw; color: var(--golden-yellow); text-shadow: 2px 2px 0 var(--deep-purple); margin-bottom: 1vw; }
+        p { font-size: 1.4vw; line-height: 1.5; text-align: center; max-width: 80%; background: var(--bg-glass); backdrop-filter: blur(10px); padding: 1.5vw; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); }
+        .instruction { color: var(--turquoise); font-weight: bold; font-size: 1.5vw; text-shadow: 0 0 10px var(--turquoise); }
+
+        .btn {
+            background: linear-gradient(45deg, var(--royal-blue), var(--cyan));
+            color: var(--white); border: 2px solid var(--cyan); border-radius: 30px;
+            padding: 1vw 2.5vw; font-size: 1.5vw; font-family: 'Orbitron', sans-serif; font-weight: bold;
+            cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); margin: 0.5vw;
+        }
+        .btn:hover { transform: scale(1.05); box-shadow: 0 0 25px var(--cyan); background: linear-gradient(45deg, var(--cyan), var(--turquoise)); color: var(--deep-purple); }
+        .btn:active { transform: scale(0.95); }
+
+        /* Top HUD */
+        .hud { position: absolute; top: 2%; left: 2%; right: 2%; display: flex; justify-content: space-between; z-index: 20; pointer-events: none; }
+        .hud .hud-item { background: var(--bg-glass); backdrop-filter: blur(5px); border: 1px solid var(--cyan); padding: 0.8vw 1.5vw; border-radius: 20px; font-size: 1.2vw; font-weight: bold; pointer-events: auto; color: var(--cyan); }
+        
+        @keyframes spinSlow { 100% { transform: rotate(360deg); } }
+        @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 20px var(--cyan); } 50% { box-shadow: 0 0 50px var(--cyan), inset 0 0 20px var(--cyan); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes warp { 0% { transform: scale(1) rotate(0deg); opacity: 1; } 100% { transform: scale(5) rotate(90deg); opacity: 0; } }
+
+        /* Time Machine Core */
+        .time-machine { width: 25vw; height: 25vw; position: relative; display: flex; justify-content: center; align-items: center; margin: 2vw 0; }
+        .ring { position: absolute; border-radius: 50%; border: 3px solid transparent; }
+        .ring-1 { width: 100%; height: 100%; border-top-color: var(--cyan); border-bottom-color: var(--magenta); animation: spinSlow 4s linear infinite; }
+        .ring-2 { width: 85%; height: 85%; border-left-color: var(--turquoise); border-right-color: var(--golden-yellow); animation: spinSlow 3s linear infinite reverse; }
+        .core { width: 60%; height: 60%; background: radial-gradient(circle, var(--white), var(--cyan), transparent); border-radius: 50%; animation: pulseGlow 2s infinite; display: flex; justify-content: center; align-items: center; font-size: 5vw; cursor: pointer; }
+
+        .grid-layout { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5vw; width: 90%; margin-top: 1vw; }
+        .play-card { background: rgba(0, 0, 0, 0.6); border: 2px solid var(--cyan); border-radius: 10px; padding: 1.5vw; cursor: pointer; transition: 0.3s; width: 22%; text-align: center; font-weight: bold; color: var(--white); font-size: 1.2vw; display: flex; flex-direction: column; align-items: center; gap: 1vw; }
+        .play-card:hover { transform: translateY(-5px); border-color: var(--golden-yellow); box-shadow: 0 5px 15px rgba(255, 183, 3, 0.4); }
+        .play-card.selected { background: var(--royal-blue); border-color: var(--white); transform: scale(1.05); }
+        .play-card.matched { background: var(--emerald); border-color: var(--white); pointer-events: none; opacity: 0.8; }
+        
+        .target-slot { border: 2px dashed var(--turquoise); border-radius: 10px; width: 22%; min-height: 8vw; display: flex; justify-content: center; align-items: center; text-align: center; padding: 1vw; cursor: pointer; transition: 0.3s; background: rgba(0,255,255,0.05); }
+        .target-slot:hover { background: rgba(0,255,255,0.2); }
+        .target-slot.filled { border-style: solid; background: rgba(0, 230, 118, 0.3); border-color: var(--emerald); pointer-events: none; }
+
+        .timeline-map { display: flex; justify-content: space-between; align-items: center; width: 90%; height: 10vw; margin-top: 2vw; position: relative; }
+        .timeline-line { position: absolute; top: 50%; left: 5%; right: 5%; height: 4px; background: rgba(255,255,255,0.2); z-index: 1; }
+        .timeline-line-fill { position: absolute; top: 50%; left: 5%; height: 4px; background: var(--cyan); z-index: 1; width: 0%; transition: width 0.5s; box-shadow: 0 0 10px var(--cyan); }
+        .node { width: 5vw; height: 5vw; border-radius: 50%; background: var(--deep-purple); border: 3px solid rgba(255,255,255,0.3); z-index: 2; display: flex; justify-content: center; align-items: center; font-size: 2vw; cursor: pointer; transition: 0.3s; position: relative; }
+        .node span { position: absolute; bottom: -2vw; font-size: 1vw; white-space: nowrap; font-family: 'Orbitron'; font-weight: bold; color: var(--white); text-shadow: 1px 1px 2px black; }
+        .node.locked { filter: grayscale(100%); pointer-events: none; }
+        .node.unlocked { border-color: var(--cyan); box-shadow: 0 0 15px var(--cyan); animation: float 2s infinite; }
+        .node.completed { border-color: var(--golden-yellow); background: var(--royal-blue); }
+
+        .hidden-object { position: absolute; font-size: 4vw; cursor: pointer; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5)); transition: 0.3s; }
+        .hidden-object:hover { transform: scale(1.2); filter: drop-shadow(0 0 10px var(--golden-yellow)); }
+        .hidden-object.found { opacity: 0; pointer-events: none; transform: scale(2); }
+
+        #modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(5px); }
+        .modal-content { background: linear-gradient(to bottom, #1a237e, #12002b); padding: 3vw; border-radius: 20px; border: 2px solid var(--cyan); text-align: center; width: 50%; box-shadow: 0 0 40px var(--cyan); animation: float 3s infinite; }
+        .modal-title { font-family: 'Orbitron'; font-size: 2.5vw; color: var(--golden-yellow); margin-bottom: 1vw; }
+        
+        .badge-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 1vw; margin-top: 1vw; }
+        .badge-icon { width: 5vw; height: 5vw; border-radius: 50%; background: linear-gradient(45deg, var(--golden-yellow), var(--coral)); display: flex; justify-content: center; align-items: center; font-size: 2.5vw; border: 3px solid var(--white); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        
+        /* Characters */
+        .character-box { position: absolute; bottom: 2%; left: 2%; display: flex; align-items: flex-end; gap: 1vw; pointer-events: none; }
+        .avatar { width: 8vw; height: 8vw; background: rgba(255,255,255,0.1); border-radius: 50%; border: 3px solid var(--cyan); display: flex; justify-content: center; align-items: center; font-size: 5vw; backdrop-filter: blur(5px); }
+        .dialogue { background: rgba(0,0,0,0.7); border: 2px solid var(--turquoise); padding: 1vw 1.5vw; border-radius: 20px 20px 20px 0; color: white; font-size: 1.2vw; max-width: 25vw; pointer-events: auto; }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    
+    <div class="hud" id="hud" style="display:none;">
+        <div class="hud-item" onclick="nav('slide-3')" style="cursor:pointer;">🧭 PETA WAKTU</div>
+        <div class="hud-item">🏆 SKOR: <span id="score-display">0</span></div>
+        <div class="hud-item">💎 KRISTAL: <span id="progress-display">0</span>/8</div>
+    </div>
+
+    <div id="slide-1" class="screen active">
+        <h1>ISLAMIC HISTORY<br>TIME TRAVEL</h1>
+        <h2 style="color: var(--white); font-family: 'Nunito'; font-weight: normal;">Jelajahi Masa Lalu, Temukan Jejak Peradaban!</h2>
+        
+        <div class="time-machine">
+            <div class="ring ring-1"></div>
+            <div class="ring ring-2"></div>
+            <div class="core">⏳</div>
+        </div>
+        
+        <div style="display: flex; gap: 1vw; margin-top: 2vw;">
+            <button class="btn" onclick="nav('slide-2')">🚀 START JOURNEY</button>
+            <button class="btn" style="background: transparent; border-color: var(--golden-yellow); color: var(--golden-yellow);" onclick="showModal('Cara Bermain', 'Gunakan mesin waktu untuk melintasi sejarah. Selesaikan misi dengan mencocokkan benda, mencari petunjuk, dan menyusun urutan peristiwa sejarah dengan tepat!', 'info')">📖 HOW TO PLAY</button>
+        </div>
+    </div>
+
+    <div id="slide-2" class="screen" style="background: var(--bg-space);">
+        <h2>Pusat Pelatihan Penjelajah Waktu</h2>
+        <p class="instruction">Temukan 3 komponen mesin waktu yang melayang di ruangan ini untuk mengaktifkan peta sejarah!</p>
+        
+        <div style="position: relative; width: 80%; height: 25vw; border: 2px solid rgba(255,255,255,0.2); border-radius: 20px; background: rgba(0,0,0,0.4); margin-top: 1vw;">
+            <!-- Hidden objects -->
+            <div class="hidden-object" style="top: 20%; left: 15%;" onclick="findItem(this)">🔮</div>
+            <div class="hidden-object" style="top: 60%; left: 50%;" onclick="findItem(this)">📜</div>
+            <div class="hidden-object" style="top: 30%; right: 20%;" onclick="findItem(this)">⚙️</div>
+            
+            <div style="position: absolute; bottom: 5%; right: 5%; font-size: 8vw; opacity: 0.5;">🛰️</div>
+        </div>
+
+        <div class="character-box">
+            <div class="avatar">👨‍🚀</div>
+            <div class="dialogue" id="zaki-dialogue">Halo! Aku Zaki. Klik benda-benda bercahaya untuk mengumpulkannya! (<span id="found-items">0</span>/3)</div>
+        </div>
+    </div>
+
+    <div id="slide-3" class="screen" style="background: var(--bg-space);">
+        <h2>The Grand Timeline</h2>
+        <p>Koordinat sejarah teracak! Masuki portal yang aktif untuk memperbaiki arsip sejarah Islam.</p>
+        
+        <div class="timeline-map">
+            <div class="timeline-line"></div>
+            <div class="timeline-line-fill" id="map-progress"></div>
+            
+            <div class="node unlocked" id="node-1" onclick="nav('slide-4')">🕋<span>Makkah</span></div>
+            <div class="node locked" id="node-2" onclick="nav('slide-5')">🐪<span>Hijrah</span></div>
+            <div class="node locked" id="node-3" onclick="nav('slide-6')">🤝<span>Madinah</span></div>
+            <div class="node locked" id="node-4" onclick="nav('slide-7')">👑<span>Pemimpin</span></div>
+            <div class="node locked" id="node-5" onclick="nav('slide-8')">🔭<span>Ilmuwan</span></div>
+            <div class="node locked" id="node-6" onclick="nav('slide-9')">📚<span>Baghdad</span></div>
+            <div class="node locked" id="node-7" onclick="nav('slide-10')">🌍<span>Pertukaran</span></div>
+            <div class="node locked" id="node-8" onclick="nav('slide-11')">🧩<span>Timeline</span></div>
+        </div>
+
+        <div style="margin-top: 5vw;">
+            <button class="btn" onclick="nav('slide-13')">📓 BUKA JURNAL (REFLEKSI)</button>
+        </div>
+    </div>
+
+    <div id="slide-4" class="screen" style="background: var(--bg-history);">
+        <h2>Misi 1: Makkah Mystery</h2>
+        <p class="instruction">Klik kartu di bawah, lalu klik kotak kosong yang tepat untuk mencocokkan tahapan dakwah Nabi Muhammad ﷺ di Makkah!</p>
+        
+        <!-- Source Cards -->
+        <div class="grid-layout" id="m1-sources">
+            <div class="play-card" onclick="selectMatch(this, 'm1', 'sembunyi')">Dakwah kepada keluarga & sahabat terdekat (Darul Arqam)</div>
+            <div class="play-card" onclick="selectMatch(this, 'm1', 'terang')">Dakwah secara terbuka kepada masyarakat luas (Bukit Shafa)</div>
+        </div>
+        
+        <!-- Target Slots -->
+        <div class="grid-layout" style="margin-top: 3vw;" id="m1-targets">
+            <div class="target-slot" onclick="attemptMatch(this, 'm1', 'sembunyi')">Tahap 1: Dakwah Sembunyi-sembunyi<br><span style="font-size:2vw; opacity:0.5;">?</span></div>
+            <div class="target-slot" onclick="attemptMatch(this, 'm1', 'terang')">Tahap 2: Dakwah Terang-terangan<br><span style="font-size:2vw; opacity:0.5;">?</span></div>
+        </div>
+    </div>
+
+    <div id="slide-5" class="screen" style="background: var(--bg-history);">
+        <h2>Misi 2: The Hijrah Route</h2>
+        <p class="instruction">Susun urutan peristiwa Hijrah ke Madinah secara kronologis! (Klik kartu untuk memindahkannya ke urutan yang benar)</p>
+        
+        <div class="grid-layout" id="m2-sources">
+            <div class="play-card" onclick="slotSequence(this, 'm2', 3)">Singgah dan membangun Masjid Quba</div>
+            <div class="play-card" onclick="slotSequence(this, 'm2', 1)">Perintah Allah SWT untuk berhijrah</div>
+            <div class="play-card" onclick="slotSequence(this, 'm2', 4)">Tiba di Yatsrib (Madinah) disambut gembira</div>
+            <div class="play-card" onclick="slotSequence(this, 'm2', 2)">Perjalanan rahasia bersama Abu Bakar</div>
+        </div>
+
+        <div class="grid-layout" style="margin-top: 2vw;" id="m2-targets">
+            <div class="target-slot">1</div>
+            <div class="target-slot">2</div>
+            <div class="target-slot">3</div>
+            <div class="target-slot">4</div>
+        </div>
+    </div>
+
+    <div id="slide-6" class="screen" style="background: linear-gradient(to bottom, #1b5e20, #004d40);">
+        <h2>Misi 3: Community Builder</h2>
+        <p class="instruction">Pasangkan nama kelompok dengan perannya saat membangun masyarakat Madinah!</p>
+        
+        <div style="display: flex; width: 90%; gap: 5vw; justify-content: center;">
+            <div style="display: flex; flex-direction: column; gap: 2vw; width: 40%;">
+                <div class="play-card" style="width: 100%;" onclick="selectMatch(this, 'm3', 'muhajirin')">Kaum Muhajirin</div>
+                <div class="play-card" style="width: 100%;" onclick="selectMatch(this, 'm3', 'ansar')">Kaum Ansar</div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 2vw; width: 40%;">
+                <div class="target-slot" style="width: 100%;" onclick="attemptMatch(this, 'm3', 'ansar')">Penduduk Madinah yang menolong dan menyambut hangat.</div>
+                <div class="target-slot" style="width: 100%;" onclick="attemptMatch(this, 'm3', 'muhajirin')">Umat Islam Makkah yang rela meninggalkan harta demi hijrah.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="slide-7" class="screen" style="background: linear-gradient(to bottom, #b71c1c, #4a148c);">
+        <h2>Misi 4: The Four Leaders</h2>
+        <p class="instruction">Hubungkan Khulafaur Rasyidin dengan salah satu kontribusi pentingnya menurut sejarah!</p>
+        
+        <div class="grid-layout" id="m4-sources">
+            <div class="play-card" onclick="selectMatch(this, 'm4', 'abu')">Abu Bakar ash-Shiddiq</div>
+            <div class="play-card" onclick="selectMatch(this, 'm4', 'umar')">Umar bin Khattab</div>
+            <div class="play-card" onclick="selectMatch(this, 'm4', 'utsman')">Utsman bin Affan</div>
+            <div class="play-card" onclick="selectMatch(this, 'm4', 'ali')">Ali bin Abi Thalib</div>
+        </div>
+
+        <div class="grid-layout" style="margin-top: 2vw;">
+            <div class="target-slot" onclick="attemptMatch(this, 'm4', 'utsman')">Standarisasi penulisan (Mushaf) Al-Qur'an</div>
+            <div class="target-slot" onclick="attemptMatch(this, 'm4', 'abu')">Memerangi nabi palsu dan memulai kodifikasi Al-Qur'an</div>
+            <div class="target-slot" onclick="attemptMatch(this, 'm4', 'ali')">Memajukan ilmu tata bahasa Arab & pusat pemerintahan di Kufah</div>
+            <div class="target-slot" onclick="attemptMatch(this, 'm4', 'umar')">Menetapkan kalender Hijriah & memperluas wilayah</div>
+        </div>
+    </div>
+
+    <div id="slide-8" class="screen" style="background: var(--bg-space);">
+        <h2>Misi 5: The Knowledge Universe</h2>
+        <p class="instruction">Banyak ilmuwan muslim berdedikasi tinggi. Pasangkan ilmuwan dengan bidang penemuannya!</p>
+        
+        <div style="display: flex; width: 90%; gap: 2vw; justify-content: center; margin-top: 2vw;">
+            <!-- Left: Scientists -->
+            <div style="flex: 1; display:flex; flex-direction:column; gap:1vw;">
+                <div class="play-card" style="width:100%; background:var(--deep-purple);" onclick="selectMatch(this, 'm5', 'matematika')">Al-Khawarizmi</div>
+                <div class="play-card" style="width:100%; background:var(--deep-purple);" onclick="selectMatch(this, 'm5', 'kedokteran')">Ibnu Sina (Avicenna)</div>
+                <div class="play-card" style="width:100%; background:var(--deep-purple);" onclick="selectMatch(this, 'm5', 'geografi')">Al-Idrisi</div>
+            </div>
+            
+            <!-- Right: Fields -->
+            <div style="flex: 1; display:flex; flex-direction:column; gap:1vw;">
+                <div class="target-slot" style="width:100%;" onclick="attemptMatch(this, 'm5', 'kedokteran')">Bapak Kedokteran Modern (Buku Al-Qanun fi Thib)</div>
+                <div class="target-slot" style="width:100%;" onclick="attemptMatch(this, 'm5', 'geografi')">Ahli Peta/Geografi (Membuat peta dunia globe perak)</div>
+                <div class="target-slot" style="width:100%;" onclick="attemptMatch(this, 'm5', 'matematika')">Penemu Aljabar dan Angka Nol (Matematika)</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="slide-9" class="screen" style="background: radial-gradient(circle, #5d4037, #3e2723);">
+        <h2>Misi 6: Baghdad Archive Quest</h2>
+        <p class="instruction">Pisahkan antara FAKTA sejarah (Baitul Hikmah Baghdad) dan FIKSI game (Mesin Waktu)!</p>
+        <p style="font-size:1vw;">Pilih kartu, lalu masukkan ke rak perpustakaan (Fakta) atau buang ke keranjang (Fiksi).</p>
+        
+        <div class="grid-layout">
+            <div class="play-card" onclick="selectMatch(this, 'm6', 'fakta1')">Baitul Hikmah adalah pusat penerjemahan karya kuno.</div>
+            <div class="play-card" onclick="selectMatch(this, 'm6', 'fiksi1')">Kristal energi digunakan khalifah untuk teleportasi.</div>
+            <div class="play-card" onclick="selectMatch(this, 'm6', 'fakta2')">Perpustakaan Baghdad menyimpan ribuan manuskrip ilmu.</div>
+        </div>
+
+        <div style="display:flex; justify-content:center; gap:5vw; margin-top:3vw; width:80%;">
+            <div class="target-slot" style="width:40%; border-color:var(--emerald);" onclick="attemptMatchMulti(this, 'm6', ['fakta1', 'fakta2'])">📚 RAK FAKTA SEJARAH (Butuh 2 kartu)</div>
+            <div class="target-slot" style="width:40%; border-color:var(--coral);" onclick="attemptMatchMulti(this, 'm6', ['fiksi1'])">🗑️ KERANJANG FIKSI (Butuh 1 kartu)</div>
+        </div>
+    </div>
+
+    <div id="slide-10" class="screen" style="background: var(--bg-history);">
+        <h2>Misi 7: Cross-Cultural Exchange</h2>
+        <p class="instruction">Ilmu pengetahuan berkembang lewat pertukaran. Hubungkan pusat peradaban dengan deskripsinya!</p>
+        
+        <div class="grid-layout">
+            <div class="play-card" onclick="selectMatch(this, 'm7', 'andalusia')">Kordoba (Andalusia / Spanyol)</div>
+            <div class="play-card" onclick="selectMatch(this, 'm7', 'baghdad')">Baghdad (Irak)</div>
+        </div>
+
+        <div class="grid-layout" style="margin-top: 3vw;">
+            <div class="target-slot" style="width:40%;" onclick="attemptMatch(this, 'm7', 'baghdad')">Pusat pemerintahan Abbasiyah, terkenal dengan Baitul Hikmah.</div>
+            <div class="target-slot" style="width:40%;" onclick="attemptMatch(this, 'm7', 'andalusia')">Pusat keilmuan Islam di Eropa, terkenal dengan masjid dan perpustakaan megah.</div>
+        </div>
+    </div>
+
+    <div id="slide-11" class="screen" style="background: var(--bg-space);">
+        <h2>Misi 8: The Civilization Puzzle</h2>
+        <p class="instruction">Tantangan Terakhir! Susun 3 periode utama ini secara kronologis dari yang paling awal!</p>
+        
+        <div class="grid-layout" id="m8-sources">
+            <div class="play-card" onclick="slotSequence(this, 'm8', 2)">Masa Kepemimpinan Khulafaur Rasyidin</div>
+            <div class="play-card" onclick="slotSequence(this, 'm8', 3)">Masa Kejayaan Ilmu (Dinasti Umayyah & Abbasiyah)</div>
+            <div class="play-card" onclick="slotSequence(this, 'm8', 1)">Masa Dakwah Nabi Muhammad ﷺ (Makkah & Madinah)</div>
+        </div>
+
+        <div class="grid-layout" style="margin-top: 2vw;" id="m8-targets">
+            <div class="target-slot" style="width:30%;">Periode 1</div>
+            <div class="target-slot" style="width:30%;">Periode 2</div>
+            <div class="target-slot" style="width:30%;">Periode 3</div>
+        </div>
+    </div>
+
+
+    <div id="slide-13" class="screen" style="background: radial-gradient(circle, #004d40, #000000);">
+        <h2>History Lab: Jurnal Refleksi</h2>
+        <p>Cek kebenaran sejarah dan renungkan pelajaran yang kamu dapatkan!</p>
+        
+        <div style="display:flex; gap: 2vw; width: 90%; justify-content:center; margin-top: 2vw;">
+            <div class="play-card" style="width:30%; background:var(--royal-blue); cursor:default;">
+                <h3>📜 Pelajaran Emas</h3>
+                <span style="font-size:1vw; font-weight:normal;">Perkembangan ilmu Islam melibatkan semangat membaca (Iqra), keterbukaan, dan pertukaran dengan peradaban lain (Yunani, Persia, India).</span>
+            </div>
+            <div class="play-card" style="width:30%; background:var(--royal-blue); cursor:default;">
+                <h3>🛡️ Nilai Teladan</h3>
+                <span style="font-size:1vw; font-weight:normal;">Persaudaraan Muhajirin dan Ansar mengajarkan empati, saling tolong-menolong, dan persatuan melampaui batas kesukuan.</span>
+            </div>
+            <div class="play-card" style="width:30%; background:var(--coral); cursor:default;">
+                <h3>⚠️ Literasi Kritis</h3>
+                <span style="font-size:1vw; font-weight:normal;">Mesin waktu dan kristal energi murni fiksi game ini! Selalu cek buku PAI atau tanya gurumu untuk mengetahui fakta sejarah yang sah.</span>
+            </div>
+        </div>
+
+        <button class="btn" style="margin-top: 3vw;" onclick="nav('slide-3')">KEMBALI KE PETA</button>
+        <button class="btn" id="btn-finale" style="margin-top: 3vw; display: none;" onclick="nav('slide-14')">🎉 MENUJU GRAND FINALE</button>
+    </div>
+
+    <div id="slide-14" class="screen" style="background: var(--bg-space);">
+        <h1 style="font-size: 5vw; color: var(--golden-yellow); text-shadow: 0 0 30px var(--golden-yellow);">MASTER OF HISTORY</h1>
+        <p style="background: rgba(255,215,0,0.2); border-color: var(--golden-yellow); font-size: 1.5vw;">
+            Alhamdulillah! Mesin waktu stabil kembali. Kamu telah membuktikan dedikasi dalam mempelajari sejarah dan peradaban Islam.
+        </p>
+        
+        <div class="badge-container" id="final-badges" style="margin: 2vw 0;">
+            <!-- Badges populated by JS -->
+        </div>
+
+        <h3 style="color:var(--cyan); font-size: 2vw;">SKOR AKHIR: <span id="final-score">0</span></h3>
+
+        <div style="margin-top: 2vw;">
+            <button class="btn" onclick="location.reload()">🔄 REPLAY ADVENTURE</button>
+        </div>
+    </div>
+
+    <div id="modal">
+        <div class="modal-content">
+            <div class="modal-title" id="modal-title">Info</div>
+            <div style="color:white; font-size: 1.5vw; margin-bottom: 2vw;" id="modal-text">Pesan di sini</div>
+            <button class="btn" onclick="closeModal()">Lanjutkan</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Game State
+    let score = 0;
+    let completedMissions = 0;
+    let currentScreen = 'slide-1';
+    let badges = [];
+
+    // Navigation
+    function nav(target) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(target).classList.add('active');
+        
+        if(target !== 'slide-1' && target !== 'slide-14') {
+            document.getElementById('hud').style.display = 'flex';
+        } else {
+            document.getElementById('hud').style.display = 'none';
+        }
+    }
+
+    // Modal System
+    function showModal(title, text, type, callback) {
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-text').innerText = text;
+        const modal = document.getElementById('modal');
+        modal.style.display = 'flex';
+        
+        const content = modal.querySelector('.modal-content');
+        if(type === 'success') {
+            content.style.borderColor = 'var(--emerald)';
+            document.getElementById('modal-title').style.color = 'var(--emerald)';
+            addScore(100);
+        } else if(type === 'error') {
+            content.style.borderColor = 'var(--coral)';
+            document.getElementById('modal-title').style.color = 'var(--coral)';
+            addScore(-10); // Penalty
+        } else {
+            content.style.borderColor = 'var(--cyan)';
+            document.getElementById('modal-title').style.color = 'var(--golden-yellow)';
+        }
+
+        modal.dataset.callback = callback ? callback.toString() : '';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+        // if there's a callback, execute logic (simplified for string eval if needed, but avoiding eval)
+    }
+
+    // Scoring & Progress
+    function addScore(points) {
+        score += points;
+        if(score < 0) score = 0;
+        document.getElementById('score-display').innerText = score;
+        document.getElementById('final-score').innerText = score;
+    }
+
+    function completeMission(missionNum, badgeIcon, badgeName) {
+        completedMissions++;
+        document.getElementById('progress-display').innerText = completedMissions;
+        
+        // Unlock next node
+        if(missionNum < 8) {
+            let nextNode = document.getElementById('node-' + (missionNum + 1));
+            nextNode.classList.remove('locked');
+            nextNode.classList.add('unlocked');
+        }
+        
+        // Mark current node completed
+        let currNode = document.getElementById('node-' + missionNum);
+        currNode.classList.remove('unlocked');
+        currNode.classList.add('completed');
+        
+        // Map progress line
+        document.getElementById('map-progress').style.width = (completedMissions / 8 * 100) + '%';
+        
+        // Add Badge
+        badges.push({icon: badgeIcon, title: badgeName});
+        updateBadges();
+
+        if(completedMissions === 8) {
+            document.getElementById('btn-finale').style.display = 'inline-block';
+        }
+
+        showModal('Misi Selesai! 🎉', `Kamu memulihkan arsip sejarah ini!\n\nBadge diperoleh: ${badgeName} ${badgeIcon}`, 'success', () => nav('slide-3'));
+        setTimeout(() => nav('slide-3'), 3000); // Auto close mostly
+    }
+
+    function updateBadges() {
+        const container = document.getElementById('final-badges');
+        container.innerHTML = '';
+        badges.forEach(b => {
+            container.innerHTML += `<div class="badge-icon" title="${b.title}">${b.icon}</div>`;
+        });
+    }
+
+    // --- MINI GAMES LOGIC ---
+
+    // Training (Hidden Objects)
+    let found = 0;
+    function findItem(el) {
+        if(el.classList.contains('found')) return;
+        el.classList.add('found');
+        found++;
+        document.getElementById('found-items').innerText = found;
+        addScore(50);
+        
+        if(found === 3) {
+            document.getElementById('zaki-dialogue').innerText = "Hebat! Mesin waktu aktif. Ayo buka Peta Waktu (Timeline) di atas!";
+            badges.push({icon: '🔰', title: 'Junior Explorer'});
+            updateBadges();
+        }
+    }
+
+    // Generic Matching Logic (Click A, Click B)
+    let activeMatch = null;
+    let matchCounts = { m1:0, m3:0, m4:0, m5:0, m6:0, m7:0 };
+    let matchTotals = { m1:2, m3:2, m4:4, m5:3, m6:3, m7:2 };
+
+    function selectMatch(el, mission, value) {
+        if(el.classList.contains('matched')) return;
+        
+        // Deselect others in this mission
+        document.querySelectorAll(`#${mission}-sources .play-card, .play-card`).forEach(c => c.classList.remove('selected'));
+        
+        el.classList.add('selected');
+        activeMatch = { el: el, mission: mission, value: value };
+    }
+
+    function attemptMatch(targetEl, mission, value) {
+        if(!activeMatch || activeMatch.mission !== mission) {
+            showModal('Petunjuk', 'Pilih kartu biru terlebih dahulu, lalu klik kotak kosong yang tepat.', 'info');
+            return;
+        }
+
+        if(activeMatch.value === value) {
+            // Correct
+            activeMatch.el.classList.remove('selected');
+            activeMatch.el.classList.add('matched');
+            targetEl.classList.add('filled');
+            targetEl.innerHTML = activeMatch.el.innerHTML + `<br><span style="font-size:1vw; color:var(--deep-purple);">✓ FAKTA</span>`;
+            
+            matchCounts[mission]++;
+            activeMatch = null;
+            addScore(50);
+            
+            checkMissionComplete(mission);
+        } else {
+            showModal('Kurang Tepat', 'Coba baca lagi fakta sejarahnya. Hubungan ini belum sesuai.', 'error');
+        }
+    }
+
+    // Multi-match for Slide 9 (Baghdad Archive)
+    let m6TargetCounts = { fakta: 0, fiksi: 0 };
+    function attemptMatchMulti(targetEl, mission, acceptedValues) {
+         if(!activeMatch || activeMatch.mission !== mission) return;
+         
+         if(acceptedValues.includes(activeMatch.value)) {
+            activeMatch.el.classList.remove('selected');
+            activeMatch.el.classList.add('matched');
+            activeMatch.el.style.display = 'none'; // hide it
+            
+            matchCounts[mission]++;
+            addScore(50);
+            activeMatch = null;
+            
+            checkMissionComplete(mission);
+         } else {
+             showModal('Ups!', 'Apakah itu fakta sejarah atau fiksi game? Pikirkan lagi!', 'error');
+         }
+    }
+
+    function checkMissionComplete(m) {
+        if(matchCounts[m] === matchTotals[m]) {
+            setTimeout(() => {
+                let badgeMap = {
+                    m1: {i: '🕵️', n: 'Investigator'},
+                    m3: {i: '🤝', n: 'Community Architect'},
+                    m4: {i: '👑', n: 'Legacy Keeper'},
+                    m5: {i: '🔭', n: 'Knowledge Explorer'},
+                    m6: {i: '📚', n: 'Archive Restorer'},
+                    m7: {i: '🌍', n: 'Culture Connector'}
+                };
+                let num = parseInt(m.replace('m',''));
+                completeMission(num, badgeMap[m].i, badgeMap[m].n);
+            }, 1000);
+        }
+    }
+
+    // Generic Sequencing Logic
+    let seqState = { m2: 1, m8: 1 };
+    let seqTotals = { m2: 4, m8: 3 };
+
+    function slotSequence(el, mission, expectedOrder) {
+        if(el.classList.contains('matched')) return;
+        
+        let currentNeeded = seqState[mission];
+        
+        if(expectedOrder === currentNeeded) {
+            // Correct order
+            el.classList.add('matched');
+            let targetSlot = document.querySelectorAll(`#${mission}-targets .target-slot`)[currentNeeded - 1];
+            targetSlot.classList.add('filled');
+            targetSlot.innerHTML = el.innerHTML;
+            el.style.display = 'none';
+            
+            seqState[mission]++;
+            addScore(50);
+            
+            if(seqState[mission] > seqTotals[mission]) {
+                setTimeout(() => {
+                    if(mission === 'm2') completeMission(2, '🐪', 'Journey Navigator');
+                    if(mission === 'm8') completeMission(8, '🧩', 'Timeline Master');
+                }, 1000);
+            }
+        } else {
+             showModal('Urutan Keliru', 'Itu bukan urutan yang tepat saat ini. Pikirkan apa yang terjadi lebih dulu secara kronologis!', 'error');
+        }
+    }
+
+</script>
+</body>
+</html>
